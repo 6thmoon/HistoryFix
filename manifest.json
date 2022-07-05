@@ -1,0 +1,10 @@
+{
+	"name": "HistoryFix",
+	"version_number": "0.1.0",
+	"website_url": "https://github.com/6thmoon",
+	"description": 
+		"No longer delete run history at random. Increase the number of entries before deletion.",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.19"
+	]
+}

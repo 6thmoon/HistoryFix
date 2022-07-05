@@ -1,0 +1,3 @@
+If you've spent any significant amount of time on the run history page of the *Logbook*, then you've probably noticed a large number of missing entries. The current implementation limits the number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion.
+
+This plugin simply modifies the behavior to delete the oldest run report instead. A configuration file (`BepInEx/config/local.fix.history.cfg`) is also added to allow the history limit to be increased or decreased as desired. By default, the maximum number of entries will be doubled.
