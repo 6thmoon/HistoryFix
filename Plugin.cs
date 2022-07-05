@@ -2,6 +2,8 @@
 using HarmonyLib;
 using HG;
 using RoR2;
+using RoR2.Stats;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Permissions;
@@ -15,7 +17,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.1.0";
+		public const string versionNumber = "0.2.0";
 		private static uint historyLimit;
 
 		public void Awake()
@@ -44,6 +46,25 @@ namespace Local.Fix.History
 			CollectionPool<MorgueManager.HistoryFileInfo, 
 					List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
 			return false;
+		}
+
+		[HarmonyPatch(typeof(StatManager), nameof(StatManager.OnServerGameOver))]
+		[HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> RecordEclipseWin(
+				IEnumerable<CodeInstruction> instructionList)
+		{
+			MethodInfo getType = typeof(object).GetMethod(nameof(object.GetType));
+
+			foreach ( CodeInstruction instruction in instructionList )
+			{
+				yield return instruction;
+
+				if ( instruction.Calls(getType) )
+				{
+					yield return Transpilers.EmitDelegate<Func<Type, Type>>(
+							type => type == typeof(EclipseRun) ? typeof(Run) : type);
+				}
+			}
 		}
 	}
 }
