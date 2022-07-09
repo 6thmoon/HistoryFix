@@ -1,9 +1,9 @@
 {
 	"name": "HistoryFix",
-	"version_number": "0.2.0",
-	"website_url": "https://github.com/6thmoon",
+	"version_number": "0.3.0",
+	"website_url": "https://github.com/6thmoon/HistoryFix",
 	"description": 
-		"No longer delete run history at random. Increase the number of entries before deletion.",
+		"Prevent arbitrary deletion of run history. Show equipment & log Eclipse wins.",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.19"
 	]
