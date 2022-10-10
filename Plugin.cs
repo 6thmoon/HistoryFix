@@ -26,8 +26,9 @@ namespace Local.Fix.History
 			historyLimit = Config.Bind(
 					section: "General",
 					key: "History Limit",
-					defaultValue: 60u,
-					description: "Maximum number of run history entries."
+					defaultValue: 120u,
+					description: "Maximum number of run reports - set to zero for unlimited "
+						 + "entries. Note that extreme values may break certain UI elements."
 				).Value;
 
 			Harmony.CreateAndPatchAll(typeof(Plugin));
@@ -37,15 +38,18 @@ namespace Local.Fix.History
 		[HarmonyPrefix]
 		private static bool FixHistoryLimit()
 		{
-			var historyFiles = CollectionPool<MorgueManager.HistoryFileInfo, 
-					List<MorgueManager.HistoryFileInfo>>.RentCollection();
-			MorgueManager.GetHistoryFiles(historyFiles);
+			if ( historyLimit > 0 )
+			{
+				var historyFiles = CollectionPool<MorgueManager.HistoryFileInfo,
+						List<MorgueManager.HistoryFileInfo>>.RentCollection();
+				MorgueManager.GetHistoryFiles(historyFiles);
 
-			for ( int count = historyFiles.Count; count >= historyLimit; --count )
-				MorgueManager.RemoveOldestHistoryFile();
+				for ( int count = historyFiles.Count; count >= historyLimit; --count )
+					MorgueManager.RemoveOldestHistoryFile();
 
-			CollectionPool<MorgueManager.HistoryFileInfo, 
-					List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
+				CollectionPool<MorgueManager.HistoryFileInfo,
+						List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
+			}
 			return false;
 		}
 
@@ -62,7 +66,8 @@ namespace Local.Fix.History
 				if ( instruction.Calls(getType) )
 				{
 					yield return Transpilers.EmitDelegate<Func<Type, Type>>(
-							type => type == typeof(EclipseRun) ? typeof(Run) : type);
+							type => type == typeof(EclipseRun) ? typeof(Run) : type
+						);
 				}
 			}
 		}
