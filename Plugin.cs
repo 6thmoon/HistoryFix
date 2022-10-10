@@ -6,6 +6,7 @@ using RoR2.Stats;
 using RoR2.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Security.Permissions;
 
@@ -98,12 +99,15 @@ namespace Local.Fix.History
 		{
 			if ( inventory == null || inventory != __instance ) return;
 
-			int itemCount = __instance.itemIcons.Count + equipments.Count;
-			inventory.AllocateIcons(itemCount);
-
 			foreach ( EquipmentDef equipment in equipments )
 			{
-				ItemIcon icon = inventory.itemIcons[--itemCount];
+				if ( inventory.itemIcons.Any( item =>
+						equipment.nameToken == item.tooltipProvider?.titleToken )
+					) continue;
+
+				inventory.AllocateIcons(inventory.itemIcons.Count + 1);
+
+				ItemIcon icon = inventory.itemIcons.Last();
 				TooltipProvider tooltip = icon.tooltipProvider;
 
 				icon.image.texture = equipment.pickupIconTexture;
@@ -112,6 +116,11 @@ namespace Local.Fix.History
 				tooltip.titleToken = equipment.nameToken;
 				tooltip.bodyToken = equipment.pickupToken;
 				tooltip.titleColor = ColorCatalog.GetColor(equipment.colorIndex);
+
+				ItemIcon example = inventory.itemIcons.First();
+				if ( example.tooltipProvider?.bodyToken ==
+						ItemCatalog.GetItemDef(example.itemIndex)?.descriptionToken )
+					tooltip.bodyToken = equipment.descriptionToken;
 			}
 		}
 	}
