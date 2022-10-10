@@ -24,7 +24,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.3.0";
+		public const string versionNumber = "0.4.0";
 		private static uint historyLimit;
 
 		public void Awake()

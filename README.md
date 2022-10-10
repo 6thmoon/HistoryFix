@@ -1,8 +1,8 @@
 ## Introduction
 
-If you've spent any significant amount of time on the run history page of the *Logbook*, then you probably have noticed a large number of missing entries. The current implementation limits the total number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion.
+If you've spent any significant amount of time on the run history page of the *Logbook*, then you probably have noticed a large number of missing entries. The current implementation limits the total number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion. This plugin simply modifies the behavior to delete the oldest run instead.
 
-This plugin simply modifies the behavior to delete the oldest run report instead. A configuration file (`BepInEx/config/local.fix.history.cfg`) is also provided to allow the history limit to be increased or decreased as desired. By default, the maximum number of entries will be doubled.
+A configuration file (`BepInEx/config/local.fix.history.cfg`) is provided to allow the history limit to be increased or decreased as desired. By default, ten pages of twelve reports each will be displayed on most resolutions. Furthermore, information shown in the mouse-over tooltip has been expanded and entries can now be removed via the user interface.
 
 Additionally, a fix is included for an unrelated issue where **Eclipse** victories did not count towards character wins on the statistics page of the *Logbook*. The inventory display in run history and end-of-game reports will now also show the last **Equipment** held by the player.
 
@@ -11,9 +11,15 @@ Additionally, a fix is included for an unrelated issue where **Eclipse** victori
 - Unfortunately, there is no reliable way to restore missing run reports or **Eclipse** wins; these fixes do not apply retroactively. Using a file recovery tool to inspect `steamapps/common/Risk of Rain 2/Risk of Rain 2_Data/RunReports` or manually editing your profile in `userdata/*/632360/remote/UserProfiles` may be an option if this is important to you.
 - Note that history limit is only enforced upon completing a run, as per usual.
 
-Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them. Feel free to check out my [other](https://thunderstore.io/package/6thmoon/CurseCatcher/) released [content](https://thunderstore.io/package/6thmoon/MultitudesDifficulty/) too.
+Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them. Feel free to check out my other released [content](https://thunderstore.io/package/6thmoon) as well.
 
 ## Version History
+
+#### `0.4.0`
+- Add configuration option for unlimited entries. Increase default value.
+- Improve compatibility with other plugins that modify the report inventory display.
+- Expand upon information displayed in the history entry tooltip and provide interface for manual deletion.
+- Preserve run history when participating in **Prismatic Trials** or otherwise playing unmodded.
 
 #### `0.3.0`
 - Show equipment in run history and end-of-game reports. Publish source code and update documentation.
