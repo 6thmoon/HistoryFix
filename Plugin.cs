@@ -13,6 +13,7 @@ using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Console = RoR2.Console;
 
 [assembly: AssemblyVersion(Local.Fix.History.Plugin.versionNumber)]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
@@ -56,6 +57,17 @@ namespace Local.Fix.History
 						List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
 			}
 			return false;
+		}
+
+		[HarmonyPatch(typeof(Console), nameof(Console.LoadStartupConfigs))]
+		[HarmonyPostfix]
+		private static void PreserveHistory(Console __instance)
+		{
+			if ( int.MaxValue != MorgueManager.morgueHistoryLimit.value )
+			{
+				MorgueManager.morgueHistoryLimit.value = int.MaxValue;
+				__instance.SaveArchiveConVars();
+			}
 		}
 
 		[HarmonyPatch(typeof(StatManager), nameof(StatManager.OnServerGameOver))]
