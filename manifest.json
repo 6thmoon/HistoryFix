@@ -1,6 +1,6 @@
 {
 	"name": "HistoryFix",
-	"version_number": "0.4.0",
+	"version_number": "0.4.1",
 	"website_url": "https://github.com/6thmoon/HistoryFix",
 	"description": 
 		"Prevent arbitrary deletion of run reports. Minor improvements to logbook functionality.",

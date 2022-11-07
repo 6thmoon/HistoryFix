@@ -14,6 +14,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Console = RoR2.Console;
+using UnlockBandit = RoR2.Achievements.CompleteThreeStagesAchievement;
+using UnlockRejuvenationRack = RoR2.Achievements.CompleteThreeStagesWithoutHealingsAchievement.
+		CompleteThreeStagesWithoutHealingServerAchievement;
+using UnlockSentientMeatHook = RoR2.Achievements.LoopOnceAchievement;
 
 [assembly: AssemblyVersion(Local.Fix.History.Plugin.versionNumber)]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
@@ -24,7 +28,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.4.0";
+		public const string versionNumber = "0.4.1";
 		private static uint historyLimit;
 
 		public void Awake()
@@ -71,8 +75,11 @@ namespace Local.Fix.History
 		}
 
 		[HarmonyPatch(typeof(StatManager), nameof(StatManager.OnServerGameOver))]
+		[HarmonyPatch(typeof(UnlockBandit), nameof(UnlockBandit.Check))]
+		[HarmonyPatch(typeof(UnlockRejuvenationRack), nameof(UnlockRejuvenationRack.Check))]
+		[HarmonyPatch(typeof(UnlockSentientMeatHook), nameof(UnlockSentientMeatHook.Check))]
 		[HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> FixEclipseVictories(
+		private static IEnumerable<CodeInstruction> FixEclipseTracking(
 				IEnumerable<CodeInstruction> instructionList)
 		{
 			MethodInfo getType = typeof(object).GetMethod(nameof(object.GetType));
@@ -231,7 +238,7 @@ namespace Local.Fix.History
 					Language.GetString("RULE_HEADER_DIFFICULTY") +
 						$": { Language.GetString(difficulty.nameToken) }\n" +
 					Language.GetString("RULE_HEADER_ARTIFACTS") +
-						$": { GetArtifact(report.ruleBook) }\n" +
+						$": { GetArtifact(ruleBook) }\n" +
 					Language.GetString("STATNAME_TOTALTIMEALIVE") +
 						$": { statistics.GetStatDisplayValue(StatDef.totalTimeAlive) }\n" +
 					Language.GetString("STATNAME_TOTALITEMSCOLLECTED").Split().First() +

@@ -15,6 +15,9 @@ Please report feedback or issues discovered [here](https://github.com/6thmoon/Hi
 
 ## Version History
 
+#### `0.4.1`
+- Allow certain achievements/unlocks to be granted in **Eclipse** mode.
+
 #### `0.4.0`
 - Add configuration option for unlimited entries. Increase default value.
 - Improve compatibility with other plugins that modify the report inventory display.
