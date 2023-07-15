@@ -11,9 +11,13 @@ Additionally, a fix is included for an unrelated issue where **Eclipse** victori
 - Unfortunately, there is no reliable way to restore missing run reports or **Eclipse** wins; these fixes do not apply retroactively. Using a file recovery tool to inspect `steamapps/common/Risk of Rain 2/Risk of Rain 2_Data/RunReports` or manually editing your profile in `userdata/*/632360/remote/UserProfiles` may be an option if this is important to you.
 - Note that history limit is only enforced upon completing a run, as per usual.
 
-Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them. Feel free to check out my other released [content](https://thunderstore.io/package/6thmoon) as well.
+Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them. Feel free to check out my other released [content](https://thunderstore.io/package/6thmoon/?ordering=top-rated) as well.
 
 ## Version History
+
+#### `0.4.2`
+- Update icon.
+- Reset cached entries upon exiting logbook.
 
 #### `0.4.1`
 - Allow certain achievements/unlocks to be granted in **Eclipse** mode.

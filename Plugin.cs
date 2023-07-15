@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Console = RoR2.Console;
 using UnlockBandit = RoR2.Achievements.CompleteThreeStagesAchievement;
@@ -28,7 +29,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.4.1";
+		public const string versionNumber = "0.4.2";
 		private static uint historyLimit;
 
 		public void Awake()
@@ -42,6 +43,7 @@ namespace Local.Fix.History
 				).Value;
 
 			Harmony.CreateAndPatchAll(typeof(Plugin));
+			SceneManager.sceneUnloaded += _ => CleanUp();
 		}
 
 		[HarmonyPatch(typeof(MorgueManager), nameof(MorgueManager.EnforceHistoryLimit))]
@@ -79,11 +81,11 @@ namespace Local.Fix.History
 		[HarmonyPatch(typeof(UnlockRejuvenationRack), nameof(UnlockRejuvenationRack.Check))]
 		[HarmonyPatch(typeof(UnlockSentientMeatHook), nameof(UnlockSentientMeatHook.Check))]
 		[HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> FixEclipseTracking(
-				IEnumerable<CodeInstruction> instructionList)
+		private static IEnumerable<CodeInstruction>
+				FixEclipseTracking(IEnumerable<CodeInstruction> codeInstructions)
 		{
 			MethodInfo getType = typeof(object).GetMethod(nameof(object.GetType));
-			foreach ( CodeInstruction instruction in instructionList )
+			foreach ( CodeInstruction instruction in codeInstructions )
 			{
 				yield return instruction;
 
