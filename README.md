@@ -4,7 +4,7 @@ If you've spent any significant amount of time on the run history page of the *L
 
 A configuration file (`BepInEx/config/local.fix.history.cfg`) is provided to allow the history limit to be increased or decreased as desired. By default, ten pages of twelve reports each will be displayed on most resolutions. Furthermore, information shown in the mouse-over tooltip has been expanded and entries can now be removed via the user interface.
 
-Additionally, a fix is included for an unrelated issue where **Eclipse** victories did not count towards character wins on the statistics page of the *Logbook*. The inventory display in run history and end-of-game reports will now also show the last **Equipment** held by the player.
+Additionally, a fix is included for an unrelated issue where **Eclipse** did not count towards certain achievements or victory statistics. The inventory display in run history and end-of-game reports will now also show the last **Equipment** held by the player.
 
 ## Known Issues
 

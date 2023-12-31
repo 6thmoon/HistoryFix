@@ -12,7 +12,6 @@ using System.Reflection;
 using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Console = RoR2.Console;
 using UnlockBandit = RoR2.Achievements.CompleteThreeStagesAchievement;
@@ -43,7 +42,6 @@ namespace Local.Fix.History
 				).Value;
 
 			Harmony.CreateAndPatchAll(typeof(Plugin));
-			SceneManager.sceneUnloaded += _ => CleanUp();
 		}
 
 		[HarmonyPatch(typeof(MorgueManager), nameof(MorgueManager.EnforceHistoryLimit))]
@@ -98,8 +96,8 @@ namespace Local.Fix.History
 			}
 		}
 
-		private static ItemInventoryDisplay inventory = null;
-		private static readonly List<EquipmentDef> equipments = new List<EquipmentDef>();
+		private class InventoryEquipment : MonoBehaviour {
+				internal readonly List<EquipmentDef> equipments = new List<EquipmentDef>(); }
 
 		[HarmonyPatch(typeof(GameEndReportPanelController),
 				nameof(GameEndReportPanelController.SetPlayerInfo))]
@@ -107,14 +105,16 @@ namespace Local.Fix.History
 		private static void GetEquipment(GameEndReportPanelController __instance,
 				RunReport.PlayerInfo playerInfo)
 		{
-			inventory = __instance.itemInventoryDisplay;
-			equipments.Clear();
+			ItemInventoryDisplay inventory = __instance.itemInventoryDisplay;
+			if ( ! inventory ) return;
+
+			var component = inventory.gameObject.AddComponent<InventoryEquipment>();
 
 			foreach ( EquipmentIndex index in playerInfo.equipment )
 			{
 				EquipmentDef equipment = EquipmentCatalog.GetEquipmentDef(index);
 				if ( equipment != null )
-					equipments.Add(equipment);
+					component.equipments.Add(equipment);
 			}
 		}
 
@@ -122,12 +122,14 @@ namespace Local.Fix.History
 		[HarmonyPostfix]
 		private static void AddEquipment(ItemInventoryDisplay __instance)
 		{
-			if ( inventory == null || inventory != __instance ) return;
+			ItemInventoryDisplay inventory = __instance;
+			if ( ! inventory || ! inventory.TryGetComponent(out InventoryEquipment component) )
+				return;
 
-			foreach ( EquipmentDef equipment in equipments )
+			foreach ( EquipmentDef equipment in component.equipments )
 			{
-				if ( inventory.itemIcons.Any( item =>
-						equipment.nameToken == item.tooltipProvider?.titleToken )
+				if ( inventory.itemIcons.Any(
+						 item => equipment.pickupIconTexture == item.image?.texture )
 					) continue;
 
 				inventory.AllocateIcons(inventory.itemIcons.Count + 1);
@@ -149,24 +151,20 @@ namespace Local.Fix.History
 			}
 		}
 
-		private static readonly Dictionary<Button, RunReport> entries =
-				new Dictionary<Button, RunReport>();
-		private static readonly List<Guid> deletedReports = new List<Guid>();
-
-		[HarmonyPatch(typeof(LogBookController), nameof(LogBookController.BuildEntriesPage))]
-		[HarmonyPrefix]
-		private static void CleanUp() => entries.Clear();
+		private class Report : MonoBehaviour { internal RunReport entry; }
+		private static readonly List<Guid> deleted = new List<Guid>();
 
 		[HarmonyPatch(typeof(CategoryDef), nameof(CategoryDef.InitializeMorgue))]
 		[HarmonyPostfix]
 		private static void LoadReport(GameObject gameObject, Entry entry)
 		{
 			Button button = gameObject.GetComponent<Button>();
+
 			if ( button != null && entry?.extraData is RunReport report )
 			{
-				entries[button] = report;
+				button.gameObject.AddComponent<Report>().entry = report;
 
-				if ( deletedReports.Contains(report.runGuid) )
+				if ( deleted.Contains(report.runGuid) )
 					RemoveButton(button);
 			}
 		}
@@ -176,7 +174,7 @@ namespace Local.Fix.History
 		private static void OnClick(Button __instance, PointerEventData eventData)
 		{
 			if ( eventData.button != PointerEventData.InputButton.Right ||
-					! entries.TryGetValue(__instance, out RunReport report)
+					! __instance.TryGetComponent(out Report component)
 				) return;
 
 			SimpleDialogBox dialog = SimpleDialogBox.Create();
@@ -191,12 +189,11 @@ namespace Local.Fix.History
 
 			void deleteEntry()
 			{
-				Guid identifier = report.runGuid;
+				Guid identifier = component.entry.runGuid;
 				MorgueManager.storage.DeleteFile(
-						MorgueManager.historyDirectory / identifier.ToString() + ".xml"
-					);
+						MorgueManager.historyDirectory / identifier.ToString() + ".xml");
 
-				deletedReports.Add(identifier);
+				deleted.Add(identifier);
 				RemoveButton(__instance);
 			}
 		}
@@ -221,15 +218,14 @@ namespace Local.Fix.History
 		{
 			LanguageTextMeshController tooltip = __instance.hoverLanguageTextMeshController;
 			if ( tooltip == null ||
-					! entries.TryGetValue(__instance, out RunReport report)
+					! __instance.TryGetComponent(out Report component)
 				) return;
 
-			RuleBook ruleBook = report.ruleBook;
+			RunReport report = component.entry;
 			RunReport.PlayerInfo player = report.FindFirstPlayerInfo();
 			StatSheet statistics = player.statSheet;
 			DifficultyDef difficulty = DifficultyCatalog.GetDifficultyDef(
-					ruleBook.FindDifficulty()
-				);
+					report.ruleBook.FindDifficulty());
 
 			tooltip.token = RemoveSymbols(
 					tooltip.token, Language.GetString("VOIDSURVIVOR_BODY_NAME")
@@ -240,11 +236,11 @@ namespace Local.Fix.History
 					Language.GetString("RULE_HEADER_DIFFICULTY") +
 						$": { Language.GetString(difficulty.nameToken) }\n" +
 					Language.GetString("RULE_HEADER_ARTIFACTS") +
-						$": { GetArtifact(ruleBook) }\n" +
+						$": { GetArtifact(report.ruleBook) }\n" +
 					Language.GetString("STATNAME_TOTALTIMEALIVE") +
 						$": { statistics.GetStatDisplayValue(StatDef.totalTimeAlive) }\n" +
 					Language.GetString("STATNAME_TOTALITEMSCOLLECTED").Split().First() +
-						$": { player.itemStacks.Sum() }\n" +
+						$": { GetItemCount(player) }\n" +
 					Language.GetString("STATNAME_TOTALSTAGESCOMPLETED") +
 						$": { statistics.GetStatValueULong(StatDef.totalStagesCompleted) }\n" +
 				"</style>" +
@@ -276,7 +272,7 @@ namespace Local.Fix.History
 				{
 					artifact = ArtifactCatalog.GetArtifactDef(choice.artifactIndex)?.nameToken;
 					if ( artifact is object )
-						artifact = Language.GetString(artifact).Split().Last();
+						artifact = Language.GetString(artifact).Trim().Split().Last();
 				}
 				else
 				{
@@ -286,6 +282,19 @@ namespace Local.Fix.History
 			}
 
 			return artifact ?? Language.GetString("OPTION_OFF");
+		}
+
+		private static int GetItemCount(RunReport.PlayerInfo player)
+		{
+			int count = 0;
+			for ( int index = 0; index < player.itemStacks.Length; ++index )
+			{
+				ItemDef item = ItemCatalog.GetItemDef((ItemIndex) index);
+				if ( item && ! item.hidden && item.tier != ItemTier.NoTier )
+					count += player.itemStacks[index];
+			}
+
+			return count;
 		}
 	}
 }
