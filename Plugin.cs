@@ -28,7 +28,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.4.2";
+		public const string versionNumber = "0.4.3";
 		private static uint historyLimit;
 
 		public void Awake()
@@ -126,19 +126,25 @@ namespace Local.Fix.History
 			if ( ! inventory || ! inventory.TryGetComponent(out InventoryEquipment component) )
 				return;
 
+			inventory.CalculateLayoutValues(out ItemInventoryDisplay.LayoutValues layout,
+					inventory.itemIcons.Count + component.equipments.Count);
+
 			foreach ( EquipmentDef equipment in component.equipments )
 			{
 				if ( inventory.itemIcons.Any(
 						 item => equipment.pickupIconTexture == item.image?.texture )
 					) continue;
 
-				inventory.AllocateIcons(inventory.itemIcons.Count + 1);
+				ItemIcon icon = Instantiate(
+						inventory.itemIconPrefab, inventory.transform).GetComponent<ItemIcon>();
 
-				ItemIcon icon = inventory.itemIcons.Last();
-				TooltipProvider tooltip = icon.tooltipProvider;
+				inventory.itemIcons.Add(icon);
+				inventory.LayoutIndividualIcon(layout, __instance.itemIcons.Count - 1);
 
 				icon.image.texture = equipment.pickupIconTexture;
 				icon.stackText.enabled = false;
+
+				TooltipProvider tooltip = icon.tooltipProvider;
 
 				tooltip.titleToken = equipment.nameToken;
 				tooltip.bodyToken = equipment.pickupToken;
@@ -149,6 +155,8 @@ namespace Local.Fix.History
 						ItemCatalog.GetItemDef(example.itemIndex)?.descriptionToken )
 					tooltip.bodyToken = equipment.descriptionToken;
 			}
+
+			inventory.OnIconCountChanged();
 		}
 
 		private class Report : MonoBehaviour { internal RunReport entry; }

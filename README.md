@@ -15,6 +15,9 @@ Please report feedback or issues discovered [here](https://github.com/6thmoon/Hi
 
 ## Version History
 
+#### `0.4.3`
+- Improve code/compatibility.
+
 #### `0.4.2`
 - Update icon.
 - Reset cached entries upon exiting logbook.
@@ -24,7 +27,6 @@ Please report feedback or issues discovered [here](https://github.com/6thmoon/Hi
 
 #### `0.4.0`
 - Add configuration option for unlimited entries. Increase default value.
-- Improve compatibility with other plugins that modify the report inventory display.
 - Expand upon information displayed in the history entry tooltip and provide interface for manual deletion.
 - Preserve run history when participating in **Prismatic Trials** or otherwise playing unmodded.
 
