@@ -28,7 +28,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.4.3";
+		public const string versionNumber = "0.4.4";
 		private static uint historyLimit;
 
 		public void Awake()
@@ -108,7 +108,10 @@ namespace Local.Fix.History
 			ItemInventoryDisplay inventory = __instance.itemInventoryDisplay;
 			if ( ! inventory ) return;
 
-			var component = inventory.gameObject.AddComponent<InventoryEquipment>();
+			var component = inventory.gameObject.GetComponent<InventoryEquipment>();
+
+			if ( component ) component.equipments.Clear();
+			else component = inventory.gameObject.AddComponent<InventoryEquipment>();
 
 			foreach ( EquipmentIndex index in playerInfo.equipment )
 			{
