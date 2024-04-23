@@ -7,12 +7,14 @@ using RoR2.UI;
 using RoR2.UI.LogBook;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Zio;
 using Console = RoR2.Console;
 using UnlockBandit = RoR2.Achievements.CompleteThreeStagesAchievement;
 using UnlockRejuvenationRack = RoR2.Achievements.CompleteThreeStagesWithoutHealingsAchievement.
@@ -21,15 +23,16 @@ using UnlockSentientMeatHook = RoR2.Achievements.LoopOnceAchievement;
 
 [assembly: AssemblyVersion(Local.Fix.History.Plugin.versionNumber)]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
-		// Allow private member access via publicized assemblies.
 
 namespace Local.Fix.History
 {
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.4.4";
+		public const string versionNumber = "0.5.0";
+
 		private static uint historyLimit;
+		private static bool backupProfile;
 
 		public void Awake()
 		{
@@ -37,8 +40,16 @@ namespace Local.Fix.History
 					section: "General",
 					key: "History Limit",
 					defaultValue: 120u,
-					description: "Maximum number of run reports - set to zero for unlimited "
-						 + "entries. Note that extreme values may break certain UI elements."
+					description:
+						"Maximum number of run reports. Set to zero for unlimited entries."
+				).Value;
+
+			backupProfile = Config.Bind(
+					section: "General",
+					key: "Profile Backup",
+					defaultValue: false,
+					description:
+						"Enable monthly backup of player information on Steam platform."
 				).Value;
 
 			Harmony.CreateAndPatchAll(typeof(Plugin));
@@ -96,8 +107,30 @@ namespace Local.Fix.History
 			}
 		}
 
+		[HarmonyPatch(typeof(SaveSystemSteam), nameof(SaveSystemSteam.WriteToDisk))]
+		[HarmonyPostfix]
+		private static void SaveProfile(FileOutput fileOutput)
+		{
+			UPath path = fileOutput.fileReference.path;
+			if ( ! backupProfile )
+				return;
+
+			string date = DateTime.Now.ToString("yyyy-MM");
+			path = path.GetDirectory() / "History" / date / path.GetName();
+
+			IFileSystem system = fileOutput.fileReference.fileSystem;
+			byte[] data = fileOutput.contents;
+
+			if ( system.FileExists(path) )
+				return;
+
+			using Stream stream = system.OpenFile(
+					path, FileMode.Create, FileAccess.Write, FileShare.None);
+			stream.Write(data, 0, data.Length);
+		}
+
 		private class InventoryEquipment : MonoBehaviour {
-				internal readonly List<EquipmentDef> equipments = new List<EquipmentDef>(); }
+				internal readonly List<EquipmentDef> equipments = new(); }
 
 		[HarmonyPatch(typeof(GameEndReportPanelController),
 				nameof(GameEndReportPanelController.SetPlayerInfo))]
@@ -163,7 +196,7 @@ namespace Local.Fix.History
 		}
 
 		private class Report : MonoBehaviour { internal RunReport entry; }
-		private static readonly List<Guid> deleted = new List<Guid>();
+		private static readonly List<Guid> deleted = new();
 
 		[HarmonyPatch(typeof(CategoryDef), nameof(CategoryDef.InitializeMorgue))]
 		[HarmonyPostfix]
@@ -282,7 +315,7 @@ namespace Local.Fix.History
 				if ( artifact is null )
 				{
 					artifact = ArtifactCatalog.GetArtifactDef(choice.artifactIndex)?.nameToken;
-					if ( artifact is object )
+					if ( artifact is not null )
 						artifact = Language.GetString(artifact).Trim().Split().Last();
 				}
 				else

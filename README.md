@@ -15,6 +15,10 @@ Please report feedback or issues discovered [here](https://github.com/6thmoon/Hi
 
 ## Version History
 
+#### `0.5.0`
+- Add option for profile backup.
+- Fix equipment display for non-host players.
+
 #### `0.4.3`
 - Improve code/compatibility.
 
