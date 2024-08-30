@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using HG;
 using RoR2;
@@ -29,20 +30,20 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "0.5.0";
+		public const string versionNumber = "1.0.0";
 
-		private static uint historyLimit;
-		private static bool backupProfile;
+		private static ConfigEntry<uint> historyLimit;
+		private static ConfigEntry<bool> backupProfile;
 
 		public void Awake()
 		{
 			historyLimit = Config.Bind(
 					section: "General",
 					key: "History Limit",
-					defaultValue: 120u,
+					defaultValue: 60u,
 					description:
 						"Maximum number of run reports. Set to zero for unlimited entries."
-				).Value;
+				);
 
 			backupProfile = Config.Bind(
 					section: "General",
@@ -50,7 +51,7 @@ namespace Local.Fix.History
 					defaultValue: false,
 					description:
 						"Enable monthly backup of player information on Steam platform."
-				).Value;
+				);
 
 			Harmony.CreateAndPatchAll(typeof(Plugin));
 		}
@@ -59,14 +60,16 @@ namespace Local.Fix.History
 		[HarmonyPrefix]
 		private static bool FixHistoryLimit()
 		{
-			if ( historyLimit > 0 )
+			if ( historyLimit.Value > 0 )
 			{
 				var historyFiles = CollectionPool<MorgueManager.HistoryFileInfo,
 						List<MorgueManager.HistoryFileInfo>>.RentCollection();
-				MorgueManager.GetHistoryFiles(historyFiles);
 
-				for ( int count = historyFiles.Count; count >= historyLimit; --count )
-					MorgueManager.RemoveOldestHistoryFile();
+				MorgueManager.GetHistoryFiles(historyFiles);
+				historyFiles.Sort(( a, b ) => b.lastModified.CompareTo(a.lastModified));
+
+				for ( int count = historyFiles.Count; count >= historyLimit.Value; --count )
+					historyFiles[count - 1].Delete();
 
 				CollectionPool<MorgueManager.HistoryFileInfo,
 						List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
@@ -74,15 +77,24 @@ namespace Local.Fix.History
 			return false;
 		}
 
-		[HarmonyPatch(typeof(Console), nameof(Console.LoadStartupConfigs))]
-		[HarmonyPostfix]
-		private static void PreserveHistory(Console __instance)
+		[HarmonyPatch(typeof(Console), nameof(Console.SaveArchiveConVars))]
+		[HarmonyPrefix]
+		private static void PreserveHistory()
 		{
-			if ( int.MaxValue != MorgueManager.morgueHistoryLimit.value )
+			int limit = int.MaxValue;
+
+			switch ( historyLimit.Value )
 			{
-				MorgueManager.morgueHistoryLimit.value = int.MaxValue;
-				__instance.SaveArchiveConVars();
+				case 0:
+				case > int.MaxValue / 2:
+					break;
+
+				default:
+					limit = (int) historyLimit.Value + 35;
+					break;
 			}
+
+			MorgueManager.morgueHistoryLimit.value = limit;
 		}
 
 		[HarmonyPatch(typeof(StatManager), nameof(StatManager.OnServerGameOver))]
@@ -112,7 +124,7 @@ namespace Local.Fix.History
 		private static void SaveProfile(FileOutput fileOutput)
 		{
 			UPath path = fileOutput.fileReference.path;
-			if ( ! backupProfile )
+			if ( ! backupProfile.Value )
 				return;
 
 			string date = DateTime.Now.ToString("yyyy-MM");
