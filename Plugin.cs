@@ -30,7 +30,7 @@ namespace Local.Fix.History
 	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "1.0.0";
+		public const string versionNumber = "1.1.0";
 
 		private static ConfigEntry<uint> historyLimit;
 		private static ConfigEntry<bool> backupProfile;
@@ -68,8 +68,8 @@ namespace Local.Fix.History
 				MorgueManager.GetHistoryFiles(historyFiles);
 				historyFiles.Sort(( a, b ) => b.lastModified.CompareTo(a.lastModified));
 
-				for ( int count = historyFiles.Count; count >= historyLimit.Value; --count )
-					historyFiles[count - 1].Delete();
+				for ( int count = historyFiles.Count; count >= historyLimit.Value; )
+					historyFiles[--count].Delete();
 
 				CollectionPool<MorgueManager.HistoryFileInfo,
 						List<MorgueManager.HistoryFileInfo>>.ReturnCollection(historyFiles);
@@ -86,11 +86,11 @@ namespace Local.Fix.History
 			switch ( historyLimit.Value )
 			{
 				case 0:
-				case > int.MaxValue / 2:
+				case > int.MaxValue:
 					break;
 
 				default:
-					limit = (int) historyLimit.Value + 35;
+					limit = (int) historyLimit.Value;
 					break;
 			}
 
@@ -191,6 +191,7 @@ namespace Local.Fix.History
 
 				icon.image.texture = equipment.pickupIconTexture;
 				icon.stackText.enabled = false;
+				icon.durationImage.enabled = false;
 
 				TooltipProvider tooltip = icon.tooltipProvider;
 

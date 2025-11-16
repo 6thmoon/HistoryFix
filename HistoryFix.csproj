@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>11.0</LangVersion>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>12.0</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BepInEx.BaseLib" Version="5.4.21" />
-    <PackageReference Include="HarmonyX" Version="2.10.0" />
-    <PackageReference Include="RiskOfRain2.GameLibs" Version="1.2.4-r.0" />
-    <PackageReference Include="UnityEngine.Modules" Version="[2019.4.26]" />
+    <PackageReference Include="HarmonyX" Version="[2.9.0]" />
+    <PackageReference Include="RiskOfRain2.GameLibs" Version="1.4.0-r.0" />
+    <PackageReference Include="UnityEngine.Modules" Version="[2021.3.33]" />
     <PackageReference Include="Zio" Version="[0.7.3]" />
   </ItemGroup>
 

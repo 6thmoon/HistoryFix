@@ -1,5 +1,3 @@
-After three years, five months, and two days, this issue has finally been fixed. Keeping this up since it still addresses other bugs and contains additional features. It may also be useful for people that wish to [revert to the previous version](https://github.com/risk-of-thunder/RoR2VersionSelector), since the accompanying update has been received rather poorly.
-
 ## Introduction
 
 If you've spent any significant amount of time on the run history page of the *Logbook*, then you probably have noticed a large number of missing entries. The current implementation limits the total number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion. This plugin simply modifies the behavior to delete the oldest run instead.
@@ -17,8 +15,11 @@ Please report feedback or issues discovered [here](https://github.com/6thmoon/Hi
 
 ## Version History
 
+#### `1.1.0`
+- Rebuilt for *Alloyed Collective*.
+
 #### `1.0.0`
-- Compatibility with *Seekers of the Storm* DLC update.
+- Compatibility with *Seekers of the Storm* update.
 
 #### `0.5.0`
 - Add option for profile backup.

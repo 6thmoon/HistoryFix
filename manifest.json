@@ -1,9 +1,9 @@
 {
 	"name": "HistoryFix",
-	"version_number": "1.0.0",
+	"version_number": "1.1.0",
 	"website_url": "https://github.com/6thmoon/HistoryFix",
 	"description": 
-		"Prevent arbitrary deletion of run reports. Minor improvements to logbook functionality.",
+		"Miscellaneous improvements to the logbook. Not needed to fix report deletion any more.",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.2100"
 	]
