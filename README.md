@@ -1,6 +1,6 @@
 ## Introduction
 
-If you've spent any significant amount of time on the run history page of the *Logbook*, then you probably have noticed a large number of missing entries. The current implementation limits the total number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion. This plugin simply modifies the behavior to delete the oldest run instead.
+~~If you've spent any significant amount of time on the run history page of the *Logbook*, then you probably have noticed a large number of missing entries. The current implementation limits the total number of run reports to thirty. However, once you exceed this threshold, the game will select a completely arbitrary entry for deletion. This plugin simply modifies the behavior to delete the oldest run instead.~~
 
 A configuration file (`BepInEx/config/local.fix.history.cfg`) is provided to allow the history limit to be increased or decreased as desired. By default, ten pages of twelve reports each will be displayed on most resolutions. Furthermore, information shown in the mouse-over tooltip has been expanded and entries can now be removed via the user interface.
 
@@ -8,12 +8,16 @@ Additionally, a fix is included for an unrelated issue where **Eclipse** did not
 
 ## Known Issues
 
-- Unfortunately, there is no reliable way to restore missing run reports or **Eclipse** wins; these fixes do not apply retroactively. Using a file recovery tool to inspect `steamapps/common/Risk of Rain 2/Risk of Rain 2_Data/RunReports` or manually editing your profile in `userdata/*/632360/remote/UserProfiles` may be an option if this is important to you.
+- ~~Unfortunately, there is no reliable way to restore missing run reports or **Eclipse** wins; these fixes do not apply retroactively. Using a file recovery tool to inspect `steamapps/common/Risk of Rain 2/Risk of Rain 2_Data/RunReports` or manually editing your profile in `userdata/*/632360/remote/UserProfiles` may be an option if this is important to you.~~
 - Note that history limit is only enforced upon completing a run, as per usual.
 
-Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them. Feel free to check out my other released [content](https://thunderstore.io/package/6thmoon/?ordering=top-rated) as well.
+Please report feedback or issues discovered [here](https://github.com/6thmoon/HistoryFix/issues). ~~Any suggestions regarding related problems to fix with the game are welcome, as I may not have experienced them.~~ Feel free to check out my other released [content](https://thunderstore.io/c/riskofrain2/p/6thmoon/?deprecated=true&ordering=most-downloaded) as well.
 
 ## Version History
+
+#### `1.2.0`
+- *Hallowed Concepts* patch.
+- Fix a *null reference exception* **Gearbox** introduced over two years ago...
 
 #### `1.1.0`
 - Rebuilt for *Alloyed Collective*.

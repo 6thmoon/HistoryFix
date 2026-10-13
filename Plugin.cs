@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Security.Permissions;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -22,20 +24,18 @@ using UnlockRejuvenationRack = RoR2.Achievements.CompleteThreeStagesWithoutHeali
 		CompleteThreeStagesWithoutHealingServerAchievement;
 using UnlockSentientMeatHook = RoR2.Achievements.LoopOnceAchievement;
 
-[assembly: AssemblyVersion(Local.Fix.History.Plugin.versionNumber)]
+[assembly: AssemblyVersion(Local.Fix.History.Plugin.version)]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 
 namespace Local.Fix.History
 {
-	[BepInPlugin("local.fix.history", "HistoryFix", versionNumber)]
+	[BepInPlugin(identifier, "HistoryFix", version)]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string versionNumber = "1.1.0";
+		public const string identifier = "local.fix.history", version = "1.2.0";
+		static ConfigEntry<uint> historyLimit; static ConfigEntry<bool> backupProfile;
 
-		private static ConfigEntry<uint> historyLimit;
-		private static ConfigEntry<bool> backupProfile;
-
-		public void Awake()
+		protected void Awake()
 		{
 			historyLimit = Config.Bind(
 					section: "General",
@@ -58,7 +58,7 @@ namespace Local.Fix.History
 
 		[HarmonyPatch(typeof(MorgueManager), nameof(MorgueManager.EnforceHistoryLimit))]
 		[HarmonyPrefix]
-		private static bool FixHistoryLimit()
+		static bool FixHistoryLimit()
 		{
 			if ( historyLimit.Value > 0 )
 			{
@@ -79,7 +79,7 @@ namespace Local.Fix.History
 
 		[HarmonyPatch(typeof(Console), nameof(Console.SaveArchiveConVars))]
 		[HarmonyPrefix]
-		private static void PreserveHistory()
+		static void PreserveHistory()
 		{
 			int limit = int.MaxValue;
 
@@ -90,7 +90,7 @@ namespace Local.Fix.History
 					break;
 
 				default:
-					limit = (int) historyLimit.Value;
+					limit = (int) historyLimit.Value - 1;
 					break;
 			}
 
@@ -102,15 +102,14 @@ namespace Local.Fix.History
 		[HarmonyPatch(typeof(UnlockRejuvenationRack), nameof(UnlockRejuvenationRack.Check))]
 		[HarmonyPatch(typeof(UnlockSentientMeatHook), nameof(UnlockSentientMeatHook.Check))]
 		[HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction>
-				FixEclipseTracking(IEnumerable<CodeInstruction> codeInstructions)
+		static IEnumerable<CodeInstruction> FixTypeForEclipse(IEnumerable<CodeInstruction> IL)
 		{
-			MethodInfo getType = typeof(object).GetMethod(nameof(object.GetType));
-			foreach ( CodeInstruction instruction in codeInstructions )
+			MethodInfo method = typeof(object).GetMethod(nameof(object.GetType));
+			foreach ( CodeInstruction instruction in IL )
 			{
 				yield return instruction;
 
-				if ( instruction.Calls(getType) )
+				if ( instruction.Calls(method) )
 				{
 					yield return Transpilers.EmitDelegate<Func<Type, Type>>(
 							type => type == typeof(EclipseRun) ? typeof(Run) : type
@@ -119,9 +118,36 @@ namespace Local.Fix.History
 			}
 		}
 
+		[HarmonyPatch(typeof(ItemIcon), nameof(ItemIcon.Awake))]
+		[HarmonyTranspiler]
+		static IEnumerable<CodeInstruction> FixForUserProfile(IEnumerable<CodeInstruction> IL,
+				ILGenerator generator)
+		{
+			Label label = generator.DefineLabel();
+
+			MethodInfo method = typeof(HUD).GetProperty(nameof(HUD.localUserViewer)).GetMethod;
+			FieldInfo field = typeof(ItemIcon).GetField(
+					nameof(ItemIcon.userProfile), AccessTools.all);
+
+			foreach ( CodeInstruction instruction in IL )
+			{
+				if ( instruction.Calls(method) )
+				{
+					yield return new(OpCodes.Dup);
+					yield return new(OpCodes.Brfalse, label);
+				}
+				else if ( instruction.StoresField(field) )
+				{
+					instruction.labels.Add(label);
+				}
+
+				yield return instruction;
+			}
+		}
+
 		[HarmonyPatch(typeof(SaveSystemSteam), nameof(SaveSystemSteam.WriteToDisk))]
 		[HarmonyPostfix]
-		private static void SaveProfile(FileOutput fileOutput)
+		static void SaveProfile(FileOutput fileOutput)
 		{
 			UPath path = fileOutput.fileReference.path;
 			if ( ! backupProfile.Value )
@@ -141,13 +167,13 @@ namespace Local.Fix.History
 			stream.Write(data, 0, data.Length);
 		}
 
-		private class InventoryEquipment : MonoBehaviour {
+		class InventoryEquipment : MonoBehaviour {
 				internal readonly List<EquipmentDef> equipments = new(); }
 
 		[HarmonyPatch(typeof(GameEndReportPanelController),
 				nameof(GameEndReportPanelController.SetPlayerInfo))]
 		[HarmonyPrefix]
-		private static void GetEquipment(GameEndReportPanelController __instance,
+		static void GetEquipment(GameEndReportPanelController __instance,
 				RunReport.PlayerInfo playerInfo)
 		{
 			ItemInventoryDisplay inventory = __instance.itemInventoryDisplay;
@@ -168,7 +194,7 @@ namespace Local.Fix.History
 
 		[HarmonyPatch(typeof(ItemInventoryDisplay), nameof(ItemInventoryDisplay.UpdateDisplay))]
 		[HarmonyPostfix]
-		private static void AddEquipment(ItemInventoryDisplay __instance)
+		static void AddEquipment(ItemInventoryDisplay __instance)
 		{
 			ItemInventoryDisplay inventory = __instance;
 			if ( ! inventory || ! inventory.TryGetComponent(out InventoryEquipment component) )
@@ -191,7 +217,9 @@ namespace Local.Fix.History
 
 				icon.image.texture = equipment.pickupIconTexture;
 				icon.stackText.enabled = false;
-				icon.durationImage.enabled = false;
+
+				update(dlc3);
+				update(dlc4);
 
 				TooltipProvider tooltip = icon.tooltipProvider;
 
@@ -203,17 +231,45 @@ namespace Local.Fix.History
 				if ( example.tooltipProvider?.bodyToken ==
 						ItemCatalog.GetItemDef(example.itemIndex)?.descriptionToken )
 					tooltip.bodyToken = equipment.descriptionToken;
+
+				[MethodImpl(MethodImplOptions.NoInlining)]
+				void dlc3()
+				{
+					icon.durationImage.enabled = false;
+				}
+
+				[MethodImpl(MethodImplOptions.NoInlining)]
+				void dlc4()
+				{
+					icon.asyncRawImage.SetAssetOrDirectReference(
+							equipment.pickupIconSpriteReference, equipment.pickupIconSprite);
+					icon.rentalImage.enabled = false;
+					icon.disabledImage.enabled = false;
+				}
 			}
 
 			inventory.OnIconCountChanged();
+
+			static void update(Action patch)
+			{
+				try
+				{
+					patch();
+				}
+				catch ( Exception error )
+				when ( error is MissingFieldException or TypeLoadException )
+				{
+					Debug.LogException(error);
+				}
+			}
 		}
 
-		private class Report : MonoBehaviour { internal RunReport entry; }
-		private static readonly List<Guid> deleted = new();
+		class Report : MonoBehaviour { internal RunReport entry; }
+		static readonly List<Guid> deleted = new();
 
 		[HarmonyPatch(typeof(CategoryDef), nameof(CategoryDef.InitializeMorgue))]
 		[HarmonyPostfix]
-		private static void LoadReport(GameObject gameObject, Entry entry)
+		static void LoadReport(GameObject gameObject, Entry entry)
 		{
 			Button button = gameObject.GetComponent<Button>();
 
@@ -228,7 +284,7 @@ namespace Local.Fix.History
 
 		[HarmonyPatch(typeof(MPButton), nameof(MPButton.OnPointerClick))]
 		[HarmonyPostfix]
-		private static void OnClick(Button __instance, PointerEventData eventData)
+		static void OnClick(Button __instance, PointerEventData eventData)
 		{
 			if ( eventData.button != PointerEventData.InputButton.Right ||
 					! __instance.TryGetComponent(out Report component)
@@ -255,7 +311,7 @@ namespace Local.Fix.History
 			}
 		}
 
-		private static void RemoveButton(Button button)
+		static void RemoveButton(Button button)
 		{
 			button.enabled = false;
 			button.GetComponentsInChildren<Image>().Do(
@@ -271,7 +327,7 @@ namespace Local.Fix.History
 
 		[HarmonyPatch(typeof(HGButton), nameof(HGButton.OnPointerEnter))]
 		[HarmonyPostfix]
-		private static void UpdateTooltip(HGButton __instance)
+		static void UpdateTooltip(HGButton __instance)
 		{
 			LanguageTextMeshController tooltip = __instance.hoverLanguageTextMeshController;
 			if ( tooltip == null ||
@@ -306,7 +362,7 @@ namespace Local.Fix.History
 				"</i></style>";
 		}
 
-		private static string RemoveSymbols(string source, string substring)
+		static string RemoveSymbols(string source, string substring)
 		{
 			char[] replacement = substring.Where(
 					character => char.IsLetter(character) || char.IsSeparator(character)
@@ -315,7 +371,7 @@ namespace Local.Fix.History
 			return source.Replace(substring, new string(replacement));
 		}
 
-		private static string GetArtifact(RuleBook ruleBook)
+		static string GetArtifact(RuleBook ruleBook)
 		{
 			string artifact = null;
 
@@ -341,7 +397,7 @@ namespace Local.Fix.History
 			return artifact ?? Language.GetString("OPTION_OFF");
 		}
 
-		private static int GetItemCount(RunReport.PlayerInfo player)
+		static int GetItemCount(RunReport.PlayerInfo player)
 		{
 			int count = 0;
 			for ( int index = 0; index < player.itemStacks.Length; ++index )
